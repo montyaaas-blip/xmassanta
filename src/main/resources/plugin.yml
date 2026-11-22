@@ -1,0 +1,18 @@
+name: XmasSanta
+version: 1.0.0
+main: cz.vanoce.xmassanta.SantaPlugin
+api-version: '26.2'
+author: Claude
+description: Santa se sobama chodí po spawnu a rozhazuje coiny
+depend: [FancyNpcs]
+
+commands:
+  coins:
+    description: Ukáže tvoje vánoční coiny
+    usage: "/<command> [reload]"
+    aliases: [mince]
+
+permissions:
+  xmassanta.admin:
+    description: Může načíst konfiguraci příkazem /coins reload
+    default: op

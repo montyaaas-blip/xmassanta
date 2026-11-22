@@ -1,0 +1,43 @@
+# XmasSanta - nastavení
+
+# Svět, ve kterém Santa chodí
+world: Christmas
+
+# Trasa (Santa chodí tam a zpět po přímce)
+path:
+  x: -377
+  y: 81.0
+  start-z: 10
+  end-z: -70
+  # Při cestě zpět se posune do strany o tolik bloků, aby se s sobama nepotkal "skrz sebe"
+  return-lane-offset: 1.5
+
+# Jména NPC vytvořených ve FancyNpcs (/npc create <jméno>)
+npcs:
+  santa: santa
+  # Soby jdou za Santou. Prázdný seznam = jen Santa.
+  reindeer: [sob1, sob2]
+  # Odstup mezi nimi (v počtu kroků po 2 tikách; 14 = cca 1,4 s)
+  reindeer-spacing-steps: 14
+
+# Rychlost chůze v blocích za sekundu
+walk-speed: 2.5
+
+# Santa se hýbe jen když je ve světě hráč blíž než tohle (v blocích od trasy)
+active-radius: 120
+
+coins:
+  # Jak často Santa upustí coin (v krocích po 2 tikách; 15 = každých 1,5 s)
+  drop-every-steps: 15
+  # Za jak dlouho coin zmizí (sekundy)
+  lifetime-seconds: 45
+  # Jak blízko musí hráč přijít, aby coin "sebral"
+  pickup-radius: 1.2
+  # Jméno coinu (MiniMessage)
+  name: "<gold><bold>Coin"
+  # Zpráva v actionbaru po sebrání. <total> = celkem coinů hráče
+  message: "<gold>+1 coin <gray>(celkem <white><total></white>)"
+  # Příkazy spuštěné z konzole po sebrání (%player% = jméno hráče).
+  # Hodí se, pokud už máš jiný plugin s coiny, např. "coins add %player% 1".
+  # Plugin si coiny počítá i sám (příkaz /coins).
+  commands: []

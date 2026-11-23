@@ -55,7 +55,7 @@ public final class SantaPlugin extends JavaPlugin implements CommandExecutor {
             task = new SantaTask(this, store, FancyNpcsBridge.create());
             task.start();
             getLogger().info("Santa se rozešel na cestu.");
-        } catch (ReflectiveOperationException | RuntimeException e) {
+        } catch (RuntimeException e) {
             getLogger().severe("Nepodařilo se napojit na FancyNpcs (" + e + "). Santa se nehýbe. "
                     + "Pošli tuhle chybu autorovi pluginu.");
         }

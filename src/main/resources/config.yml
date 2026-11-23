@@ -23,6 +23,11 @@ npcs:
 # Rychlost chůze v blocích za sekundu
 walk-speed: 2.5
 
+# FancyNpcs umí NPC jen teleportovat, ne nechat ho plynule jít (chůzi nepodporuje).
+# Proto se teleport neposílá při každém kroku (bliklo by to), ale jen tak často,
+# jak je tu nastaveno (v sekundách). Víc = klidnější pohyb, ale znatelnější poskakování.
+npc-update-seconds: 1.0
+
 # Santa se hýbe jen když je ve světě hráč blíž než tohle (v blocích od trasy)
 active-radius: 120
 

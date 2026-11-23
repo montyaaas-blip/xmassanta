@@ -49,10 +49,7 @@ public final class SantaTask implements Runnable {
     private final FancyNpcsBridge bridge;
     private final List<Pose> history = new ArrayList<>();
     private final List<Coin> coins = new ArrayList<>();
-    private final Set<String> warnedMissing = new HashSet<>();
-
     private BukkitTask task;
-    private boolean failed;
 
     // Nastavení načtené z configu
     private String worldName;
@@ -69,6 +66,7 @@ public final class SantaTask implements Runnable {
     private int dropEverySteps;
     private long lifetimeMillis;
     private double pickupRadius;
+    private int npcUpdateEverySteps;
 
     // Stav pohybu
     private double distance;
@@ -76,6 +74,7 @@ public final class SantaTask implements Runnable {
     private double length;
     private double sign;
     private int stepsSinceDrop;
+    private int stepsSinceNpcUpdate;
 
     public SantaTask(SantaPlugin plugin, CoinStore store, FancyNpcsBridge bridge) {
         this.plugin = plugin;
@@ -100,6 +99,11 @@ public final class SantaTask implements Runnable {
         dropEverySteps = Math.max(1, c.getInt("coins.drop-every-steps", 15));
         lifetimeMillis = c.getLong("coins.lifetime-seconds", 45) * 1000L;
         pickupRadius = c.getDouble("coins.pickup-radius", 1.2);
+        // FancyNpcs umí NPC jen teleportovat (viz /npc move_to), ne nechat ho jít.
+        // Kdybychom teleportovali při každém kroku (10x/s), vypadalo by to jako blikání/škubání -
+        // proto se poloha NPC posílá jen tak často, jak je tu nastaveno.
+        double npcUpdateSeconds = c.getDouble("npc-update-seconds", 1.0);
+        npcUpdateEverySteps = Math.max(1, (int) Math.round(npcUpdateSeconds * 20.0 / PERIOD_TICKS));
 
         length = Math.abs(endZ - startZ);
         sign = Math.signum(endZ - startZ);
@@ -129,21 +133,11 @@ public final class SantaTask implements Runnable {
 
     @Override
     public void run() {
-        if (failed) {
-            return;
-        }
         World world = Bukkit.getWorld(worldName);
         if (world == null || !playerNearby(world)) {
             return;
         }
-        try {
-            step(world);
-        } catch (ReflectiveOperationException e) {
-            failed = true;
-            plugin.getLogger().severe("Chyba při ovládání NPC ve FancyNpcs: " + e
-                    + ". Santa se přestal hýbat. Pošli tuhle chybu autorovi pluginu.");
-            return;
-        }
+        step(world);
         tickCoins(world);
     }
 
@@ -151,7 +145,7 @@ public final class SantaTask implements Runnable {
     // Pohyb
     // ------------------------------------------------------------------
 
-    private void step(World world) throws ReflectiveOperationException {
+    private void step(World world) {
         distance += direction * stepLength;
         if (distance >= length) {
             distance = length;
@@ -167,10 +161,17 @@ public final class SantaTask implements Runnable {
             history.remove(history.size() - 1);
         }
 
-        moveNpc(world, santaName, pose);
-        for (int i = 0; i < reindeer.size(); i++) {
-            int index = Math.min(history.size() - 1, spacingSteps * (i + 1));
-            moveNpc(world, reindeer.get(i), history.get(index));
+        // FancyNpcs umí NPC jen teleportovat (žádná plynulá chůze), takže teleport
+        // posíláme jen občas (viz npc-update-seconds), ne při každém dílčím kroku -
+        // jinak by to blikalo/škubalo se, přesně jak to vypadalo předtím.
+        stepsSinceNpcUpdate++;
+        if (stepsSinceNpcUpdate >= npcUpdateEverySteps) {
+            stepsSinceNpcUpdate = 0;
+            moveNpc(world, santaName, pose);
+            for (int i = 0; i < reindeer.size(); i++) {
+                int index = Math.min(history.size() - 1, spacingSteps * (i + 1));
+                moveNpc(world, reindeer.get(i), history.get(index));
+            }
         }
 
         stepsSinceDrop++;
@@ -188,12 +189,9 @@ public final class SantaTask implements Runnable {
         return new Pose(dx, z, yaw);
     }
 
-    private void moveNpc(World world, String name, Pose pose) throws ReflectiveOperationException {
-        Location location = new Location(world, pathX + pose.dx(), pathY, pose.z(), pose.yaw(), 0f);
-        if (!bridge.move(name, location) && warnedMissing.add(name)) {
-            plugin.getLogger().warning("NPC '" + name + "' ve FancyNpcs neexistuje. Vytvoř ho příkazem /npc create "
-                    + name + " (a po vytvoření /coins reload).");
-        }
+    private void moveNpc(World world, String name, Pose pose) {
+        Location location = new Location(world, pathX + pose.dx(), pathY, pose.z());
+        bridge.move(name, location, pose.yaw());
     }
 
     private boolean playerNearby(World world) {
